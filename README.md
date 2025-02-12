@@ -1,7 +1,3 @@
-<<<<<<< Updated upstream
-=======
-# bbm-backend-dev
->>>>>>> Stashed changes
 # bbm_backend_dev
 
 A new Flutter project.
