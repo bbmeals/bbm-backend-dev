@@ -20,7 +20,7 @@ jobs:
       
       # Install dependencies
       - name: Install dependencies
-        run: dart pub get
+        run: flutter pub get
       
       # Setup Google Cloud SDK
       - name: Set up Google Cloud SDK
