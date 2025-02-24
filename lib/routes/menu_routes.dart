@@ -16,20 +16,20 @@ Router menuRoutes() {
     }
   });
 
-  // GET /restaurants/<restaurantId> - Fetch a specific restaurant
-  router.get('/<restaurantId>', (Request request, String restaurantId) async {
-    try {
-      final restaurant = await FirebaseService.getDocument("restaurants", restaurantId);
-
-      if (restaurant == null) {
-        return Response.notFound(jsonEncode({'error': 'Restaurant not found'}));
-      }
-
-      return Response.ok(jsonEncode(restaurant), headers: {'Content-Type': 'application/json'});
-    } catch (e) {
-      return Response.internalServerError(body: jsonEncode({'error': e.toString()}));
-    }
-  });
+  // // GET /restaurants/<restaurantId> - Fetch a specific restaurant
+  // router.get('/<restaurantId>', (Request request, String restaurantId) async {
+  //   try {
+  //     final restaurant = await FirebaseService.getDocument("restaurants", restaurantId);
+  //
+  //     if (restaurant == null) {
+  //       return Response.notFound(jsonEncode({'error': 'Restaurant not found'}));
+  //     }
+  //
+  //     return Response.ok(jsonEncode(restaurant), headers: {'Content-Type': 'application/json'});
+  //   } catch (e) {
+  //     return Response.internalServerError(body: jsonEncode({'error': e.toString()}));
+  //   }
+  // });
 
   // POST /restaurants/ - Add a new restaurant
   router.post('/', (Request request) async {
@@ -41,6 +41,31 @@ Router menuRoutes() {
       return Response.internalServerError(body: jsonEncode({'error': e.toString()}));
     }
   });
+
+  router.get('/<restaurantId>', (Request request, String restaurantId) async {
+    try {
+      // Fetch the restaurant document
+      final restaurant = await FirebaseService.getDocument("restaurants", restaurantId);
+
+      if (restaurant == null) {
+        return Response.notFound(jsonEncode({'error': 'Restaurant not found'}));
+      }
+
+      // Fetch the menu subcollection
+      final menuItems = await FirebaseService.getCollection("restaurants/$restaurantId/menu");
+
+      // Add menu items to the restaurant data
+      restaurant['menu'] = menuItems;
+
+      return Response.ok(jsonEncode(restaurant), headers: {'Content-Type': 'application/json'});
+    } catch (e) {
+      return Response.internalServerError(body: jsonEncode({'error': e.toString()}));
+    }
+  });
+
+
+
+
 
   return router;
 }
