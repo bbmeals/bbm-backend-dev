@@ -1,0 +1,83 @@
+name: Deploy Dart Backend to Cloud Run
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build_and_deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      # Setup Dart SDK
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: '3.6.0'
+      
+      # Install dependencies
+      - name: Install dependencies
+        run: dart pub get
+      
+      # Setup Google Cloud SDK
+      - name: Set up Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v1
+        with:
+          project_id: bbm-db-dev
+          service_account_key: ${{ secrets.GCP_SA_KEY }}
+          export_default_credentials: true
+      
+      # Copy service account file
+      - name: Create Firebase service account JSON
+        run: |
+          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > firebase_service.json
+      
+      # Build and push Docker image
+      - name: Build and push Docker image
+        run: |
+          gcloud auth configure-docker
+          docker build -t gcr.io/bbm-db-dev/bbm-backend-api:${{ github.sha }} .
+          docker push gcr.io/bbm-db-dev/bbm-backend-api:${{ github.sha }}
+      
+      # Deploy to Cloud Run
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy bbm-backend-api \
+            --image gcr.io/bbm-db-dev/bbm-backend-api:${{ github.sha }} \
+            --platform managed \
+            --region us-central1 \
+            --allow-unauthenticated
+      
+      # Get the service URL
+      - name: Get Service URL
+        id: get-url
+        run: |
+          SERVICE_URL=$(gcloud run services describe bbm-backend-api --platform managed --region us-central1 --format 'value(status.url)')
+          echo "::set-output name=service_url::$SERVICE_URL"
+          echo "API_URL=$SERVICE_URL" >> $GITHUB_ENV
+      
+      # Update Firebase Remote Config with the API URL
+      - name: Install Firebase CLI
+        run: npm install -g firebase-tools
+      
+      - name: Update Firebase Remote Config
+        run: |
+          # Create a temporary remote config file
+          echo '{
+            "parameters": {
+              "api_endpoint": {
+                "defaultValue": {
+                  "value": "'"$API_URL"'"
+                },
+                "description": "Backend API Endpoint URL"
+              }
+            }
+          }' > remote_config.json
+          
+          # Deploy to Firebase Remote Config
+          firebase use bbm-db-dev --token "${{ secrets.FIREBASE_TOKEN }}"
+          firebase remoteconfig:set remote_config.json --token "${{ secrets.FIREBASE_TOKEN }}"
+          firebase remoteconfig:publish --token "${{ secrets.FIREBASE_TOKEN }}"
