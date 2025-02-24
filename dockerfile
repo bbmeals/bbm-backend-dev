@@ -1,18 +1,15 @@
-# Use the official Dart SDK image
 FROM dart:3.6
 
 WORKDIR /app
 
-# Copy pubspec files first
+# Copy necessary files
+COPY lib/ lib/
 COPY pubspec.* ./
 
 # Get dependencies
-RUN dart pub get
+RUN flutter pub get
 
-# Copy the rest of the application
-COPY . .
-
-# Make sure the firebase_service.json file is copied
+# Make sure firebase_service.json is available
 COPY firebase_service.json .
 
 # Get dependencies again

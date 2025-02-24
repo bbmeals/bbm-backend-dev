@@ -4,14 +4,14 @@ services:
     env: docker
     region: oregon
     plan: free
-    rootDir: bbm-backend-dev  # This matches your folder structure
+    rootDir: lib  # Point to the lib directory where your code is
     healthCheckPath: /test
     envVars:
       - key: PORT
         value: 8080
       - key: FIREBASE_PROJECT_ID
-        sync: false
+        value: bbm-db-dev  # Your Firebase project ID
       - key: FIREBASE_PRIVATE_KEY
-        sync: false
+        sync: false  # Will be set manually in dashboard
       - key: FIREBASE_CLIENT_EMAIL
-        sync: false
+        sync: false  # Will be set manually in dashboard
