@@ -2,18 +2,14 @@ FROM dart:3.6
 
 WORKDIR /app
 
-# Copy necessary files
-COPY lib/ lib/
-COPY pubspec.* ./
+# Copy the entire project
+COPY . .
 
 # Get dependencies
-RUN flutter pub get
+RUN dart pub get
 
-# Make sure firebase_service.json is available
+# Copy Firebase service account key
 COPY firebase_service.json .
-
-# Get dependencies again
-RUN dart pub get --offline
 
 # Set environment variables
 ENV PORT=8080
@@ -21,5 +17,4 @@ ENV PORT=8080
 # Start the server
 CMD ["dart", "lib/main.dart"]
 
-# Expose the port
 EXPOSE 8080
