@@ -1,35 +1,36 @@
-FROM debian:bullseye-slim
+FROM dart:3.6
 
-# Install dependencies
-RUN apt-get update && apt-get install -y curl git unzip xz-utils zip libglu1-mesa wget
-
-# Install Dart SDK
-RUN apt-get update && apt-get install -y apt-transport-https
-RUN wget -qO- https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add -
-RUN wget -qO- https://storage.googleapis.com/download.dartlang.org/linux/debian/dart_stable.list > /etc/apt/sources.list.d/dart_stable.list
-RUN apt-get update && apt-get install -y dart
-
-# Add Dart to PATH
-ENV PATH="/usr/lib/dart/bin:${PATH}"
-
-# Set the working directory
 WORKDIR /app
 
-# Copy the pubspec files first (for better caching)
-COPY pubspec.yaml pubspec.lock* ./
+# Copy pubspec file
+COPY pubspec.yaml ./
 
-# Try both Dart and Flutter commands - one will work depending on your project type
-RUN dart pub get || true
+# Create a minimal pubspec with only essential dependencies for backend
+RUN cat > pubspec.yaml << 'EOL'
+name: bbm_backend_dev
+description: "BBM Backend Service"
+version: 1.0.0+1
 
-# Copy the rest of the project
-COPY . .
+environment:
+  sdk: ^3.6.2
 
-# Try Flutter pub get if dart pub get failed
-RUN if [ ! -d ".dart_tool" ]; then apt-get update && apt-get install -y curl && \
-    curl -O https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_3.19.3-stable.tar.xz && \
-    tar xf flutter_linux_3.19.3-stable.tar.xz && \
-    export PATH="$PATH:/app/flutter/bin" && \
-    flutter pub get; fi
+dependencies:
+  shelf: ^1.4.1
+  shelf_router: ^1.1.4
+  http_parser: ^4.0.2
+  firebase_admin: ^0.3.0+1
+  asn1lib: 1.5.8
+  http: ^1.3.0
+
+dev_dependencies:
+  lints: ^4.0.0
+EOL
+
+# Install dependencies
+RUN dart pub get
+
+# Copy application code
+COPY lib/ lib/
 
 # Copy Firebase service account key
 COPY firebase_service.json .
