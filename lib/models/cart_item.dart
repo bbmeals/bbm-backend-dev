@@ -40,4 +40,26 @@ class CartItem {
     'customization': customization,
     'createdAt': createdAt.toIso8601String(),
   };
+
+  // Convert this CartItem into Firestore's JSON format
+  Map<String, dynamic> toFirestoreJson() {
+    return {
+      'fields': {
+        'id': {'stringValue': id},
+        'userId': {'stringValue': userId},
+        'restaurantId': {'stringValue': restaurantId},
+        'itemId': {'stringValue': itemId},
+        'quantity': {'integerValue': quantity.toString()},
+        'priceSnapshot': {'doubleValue': priceSnapshot},
+        'customization': {
+          'mapValue': {
+            'fields': customization.map((key, value) =>
+                MapEntry(key, {'stringValue': value})
+            )
+          }
+        },
+        'createdAt': {'timestampValue': createdAt.toIso8601String()}
+      }
+    };
+  }
 }

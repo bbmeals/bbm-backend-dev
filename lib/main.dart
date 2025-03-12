@@ -31,16 +31,26 @@ Future<void> main(List<String> args) async {
     // Create the main router and mount sub-routers.
     final router = Router();
 
+
     // Add a test endpoint
     router.get('/test', (Request request) {
       return Response.ok('Server is running!');
     });
+
+  // Mount routes.
+  router.mount('/restaurants/', menuRoutes());
+  router.mount('/users/', cartRoutes()); // Handles /users/<userId>/cart
+  router.mount('/users/', subscriptionRoutes()); // Handles /users/<userId>/subscriptions
+  router.mount('/orders/', orderRoutes());
+  // router.mount('/user/', orderRoutes());
+
 
     // Mount routes
     router.mount('/restaurants', menuRoutes());
     router.mount('/users', cartRoutes());
     router.mount('/users', subscriptionRoutes());
     router.mount('/orders', orderRoutes());
+
 
     final handler = Pipeline()
         .addMiddleware(logRequests())
@@ -56,3 +66,9 @@ Future<void> main(List<String> args) async {
     exit(1);
   }
 }
+  // Determine port (default to 8080)
+  final port = int.parse(Platform.environment['PORT'] ?? '8087');
+  final server = await io.serve(handler, '0.0.0.0', port);
+  print('✅ Server running on port ${server.port}');
+}
+
