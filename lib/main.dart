@@ -42,6 +42,7 @@ Future<void> main(List<String> args) async {
   router.mount('/users/', cartRoutes()); // Handles /users/<userId>/cart
   router.mount('/users/', subscriptionRoutes()); // Handles /users/<userId>/subscriptions
   router.mount('/orders/', orderRoutes());
+  // router.mount('/user/', orderRoutes());
 
   final handler = Pipeline()
       .addMiddleware(logRequests())
@@ -49,7 +50,7 @@ Future<void> main(List<String> args) async {
       .addHandler(router);
 
   // Determine port (default to 8080)
-  final port = int.parse(Platform.environment['PORT'] ?? '8080');
+  final port = int.parse(Platform.environment['PORT'] ?? '8087');
   final server = await io.serve(handler, '0.0.0.0', port);
   print('✅ Server running on port ${server.port}');
 }
