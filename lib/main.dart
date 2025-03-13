@@ -66,9 +66,4 @@ Future<void> main(List<String> args) async {
     exit(1);
   }
 }
-  // Determine port (default to 8080)
-  final port = int.parse(Platform.environment['PORT'] ?? '8087');
-  final server = await io.serve(handler, '0.0.0.0', port);
-  print('✅ Server running on port ${server.port}');
-}
 
