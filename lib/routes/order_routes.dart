@@ -98,6 +98,50 @@ Router orderRoutes() {
     }
   });
 
+  router.put('/<userId>/note', (Request request, String userId) async {
+    try {
+      final rawPayload = await request.readAsString();
+      print(rawPayload);
+      final payload = jsonDecode(rawPayload) as Map<String, dynamic>;
+
+      // Extract the note value whether it's a plain string or a map.
+      String? note;
+      final noteField = payload['note'];
+      if (noteField is Map<String, dynamic> && noteField.containsKey('stringValue')) {
+        note = noteField['stringValue'] as String?;
+      } else if (noteField is String) {
+        note = noteField;
+      }
+
+      // Validate that the note field is provided and not empty.
+      if (note == null || note.trim().isEmpty) {
+        return Response(
+          400,
+          body: jsonEncode({'error': 'Missing or empty note field'}),
+          headers: {'Content-Type': 'application/json'},
+        );
+      }
+
+      // final updateData = {'note': note};
+      final updateData = {'note': {"stringValue": note}};
+
+
+      // Update the user document in Firestore (assuming FirebaseService.updateDocument exists)
+      await FirebaseService.updateDocument('users', userId, updateData);
+
+      return Response.ok(
+        jsonEncode({'message': 'User note updated successfully', 'note': note}),
+        headers: {'Content-Type': 'application/json'},
+      );
+    } catch (e) {
+      print("Error in updating user note: $e");
+      return Response.internalServerError(
+        body: jsonEncode({'error': e.toString()}),
+        headers: {'Content-Type': 'application/json'},
+      );
+    }
+  });
+
 
 
 
