@@ -1,58 +1,93 @@
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'dart:io';
-import 'package:shelf/shelf.dart';
-import 'package:shelf/shelf_io.dart' as io;
-import 'package:shelf_router/shelf_router.dart';
-import '../routes/menu_routes.dart';
-import '../routes/cart_routes.dart';
-import '../routes/subscription_routes.dart';
-import '../routes/order_routes.dart';
 
-/// A simple CORS middleware.
-Middleware corsMiddleware() {
-  return createMiddleware(
-    requestHandler: (Request request) {
-      if (request.method == 'OPTIONS') {
-        return Response.ok('',
-            headers: {
-              'Access-Control-Allow-Origin': '*',
-              'Access-Control-Allow-Methods': 'GET, POST, DELETE, PATCH, OPTIONS',
-              'Access-Control-Allow-Headers': 'Origin, Content-Type'
-            });
-      }
+class FirebaseService {
+  static const String projectId = "bbm-db-dev"; // 🔥 Replace with your Firebase Project ID
+  static const String apiKey = "AIzaSyCfU0FvHfoG0uvCcETG6pWr8xUZtNSBix0";
+  static String get firestoreUrl => "https://firestore.googleapis.com/v1/projects/$projectId/databases/(default)/documents";
+
+  static Future<List<Map<String, dynamic>>> getCollection(String collectionName) async {
+    final url = Uri.parse("$firestoreUrl/$collectionName?key=$apiKey");
+    final response = await http.get(url);
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      final List<dynamic>? documents = data['documents'] as List<dynamic>?;
+      if (documents == null) return []; // Return an empty list if no documents found
+
+      return documents.map((doc) {
+        final fields = doc['fields'] as Map<String, dynamic>;
+        final name = doc['name'] as String;
+        final id = name.split('/').last; // Extract the document ID from the full path
+        return {
+          ...fields,
+          'id': id,
+        };
+      }).toList();
+    } else {
+      throw Exception("Failed to fetch data: ${response.body}");
+    }
+  }
+
+
+  /// Fetch a single document from a Firestore collection
+  static Future<Map<String, dynamic>?> getDocument(String collectionName, String docId) async {
+    final url = Uri.parse("$firestoreUrl/$collectionName/$docId?key=$apiKey");
+    final response = await http.get(url);
+    print(response.statusCode);
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body)['fields'];
+    } else {
       return null;
-    },
-    responseHandler: (Response response) =>
-        response.change(headers: {'Access-Control-Allow-Origin': '*'}),
-  );
-}
+    }
+  }
 
-Future<void> main(List<String> args) async {
-  try {
-    // Create the main router and mount sub-routers.
-    final router = Router();
-    
-    // Add a test endpoint
-    router.get('/test', (Request request) {
-      return Response.ok('Server is running!');
-    });
-    
-    // Mount routes
-    router.mount('/restaurants/', menuRoutes());
-    router.mount('/users/', cartRoutes()); // Handles /users/<userId>/cart
-    router.mount('/users/', subscriptionRoutes()); // Handles /users/<userId>/subscriptions
-    router.mount('/orders/', orderRoutes());
-    
-    final handler = Pipeline()
-        .addMiddleware(logRequests())
-        .addMiddleware(corsMiddleware())
-        .addHandler(router);
-    
-    // Determine port (default to 8080)
-    final port = int.parse(Platform.environment['PORT'] ?? '8080');
-    final server = await io.serve(handler, '0.0.0.0', port);
-    print('✅ Server running on port ${server.port}');
-  } catch (e) {
-    print('❌ Server error: $e');
-    exit(1);
+  /// Add a new document to Firestore and return the new document's id
+  static Future<String> addDocument(String collectionName, Map<String, dynamic> data) async {
+    final url = Uri.parse("$firestoreUrl/$collectionName?key=$apiKey");
+
+    final response = await http.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'fields': data}),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception("Failed to add data: ${response.body}");
+    }
+
+    final responseData = jsonDecode(response.body) as Map<String, dynamic>;
+    final documentName = responseData['name'] as String;
+    final parts = documentName.split('/');
+    final documentId = parts.last;
+    return documentId;
+  }
+  /// Update a Firestore document
+  static Future<void> updateDocument(String collectionName, String docId, Map<String, dynamic> data) async {
+    // Append update mask to update only the 'quantity' field
+    final url = Uri.parse("$firestoreUrl/$collectionName/$docId?key=$apiKey&updateMask.fieldPaths=quantity");
+
+    final response = await http.patch(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'fields': data}),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception("Failed to update data: ${response.body}");
+    }
+  }
+
+  /// Delete a Firestore document
+  static Future<void> deleteDocument(String collectionName, String docId) async {
+    final url = Uri.parse("$firestoreUrl/$collectionName/$docId?key=$apiKey");
+
+    final response = await http.delete(url);
+
+    if (response.statusCode != 200) {
+      throw Exception("Failed to delete data: ${response.body}");
+    }
   }
 }
