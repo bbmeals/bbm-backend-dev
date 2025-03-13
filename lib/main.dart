@@ -45,11 +45,7 @@ Future<void> main(List<String> args) async {
   // router.mount('/user/', orderRoutes());
 
 
-    // Mount routes
-    router.mount('/restaurants', menuRoutes());
-    router.mount('/users', cartRoutes());
-    router.mount('/users', subscriptionRoutes());
-    router.mount('/orders', orderRoutes());
+
 
 
     final handler = Pipeline()
