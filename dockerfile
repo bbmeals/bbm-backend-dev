@@ -5,8 +5,9 @@ WORKDIR /app
 # Copy entire project
 COPY . .
 
-# Remove Firebase Remote Config dependency
+# Remove Firebase dependencies
 RUN sed -i '/firebase_remote_config:/d' pubspec.yaml
+RUN sed -i '/firebase_core:/d' pubspec.yaml
 
 # Install dependencies
 RUN dart pub get
