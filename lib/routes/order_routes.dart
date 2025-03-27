@@ -10,11 +10,34 @@ Router orderRoutes() {
   router.get('/', (Request request) async {
     try {
       final orders = await FirebaseService.getCollection("orders");
-      return Response.ok(jsonEncode(orders), headers: {'Content-Type': 'application/json'});
+      return Response.ok(
+        jsonEncode(orders),
+        headers: {'Content-Type': 'application/json'},
+      );
     } catch (e) {
-      return Response.internalServerError(body: jsonEncode({'error': e.toString()}));
+      return Response.internalServerError(
+        body: jsonEncode({'error': e.toString()}),
+      );
     }
   });
+
+  // GET /orders/:userId - Get orders by user ID
+  router.get('/<userId>', (Request request, String userId) async {
+    try {
+      final orders = await FirebaseService.getCollection("orders");
+      final userOrders = orders.where((order) => order['userId'] == userId).toList();
+
+      return Response.ok(
+        jsonEncode(userOrders),
+        headers: {'Content-Type': 'application/json'},
+      );
+    } catch (e) {
+      return Response.internalServerError(
+        body: jsonEncode({'error': e.toString()}),
+      );
+    }
+  });
+
 
   // GET /orders/<orderId> - Get a specific order
   router.get('/<orderId>', (Request request, String orderId) async {
@@ -22,23 +45,31 @@ Router orderRoutes() {
       final order = await FirebaseService.getDocument("orders", orderId);
 
       if (order == null) {
-        return Response.notFound(jsonEncode({'error': 'Order not found'}));
+        return Response.notFound(
+          jsonEncode({'error': 'Order not found'}),
+        );
       }
 
-      return Response.ok(jsonEncode(order), headers: {'Content-Type': 'application/json'});
+      return Response.ok(
+        jsonEncode(order),
+        headers: {'Content-Type': 'application/json'},
+      );
     } catch (e) {
-      return Response.internalServerError(body: jsonEncode({'error': e.toString()}));
+      return Response.internalServerError(
+        body: jsonEncode({'error': e.toString()}),
+      );
     }
   });
 
   // POST /orders/<userId>/place - Place an order and clear the user's cart subcollection
   router.post('/<userId>/place', (Request request, String userId) async {
     try {
+      print('Placed order');
       final rawPayload = await request.readAsString();
       final payload = jsonDecode(rawPayload) as Map<String, dynamic>;
 
-      // Add the userId to the payload.
-      payload['userId'] = {"stringValue": userId};
+      // Add the userId to the payload directly.
+      payload['userId'] = userId;
 
       // Set timestamps if not provided.
       final now = DateTime.now().toUtc().toIso8601String();
@@ -71,11 +102,14 @@ Router orderRoutes() {
         );
       }
 
+      // Optionally check for the note field; if missing, default to an empty string.
+      payload.putIfAbsent('note', () => '');
+
       // Create the order by saving it to the "orders" collection.
       final orderId = await FirebaseService.addDocument("orders", payload);
       payload['id'] = orderId;
 
-      // Clear the user's cart subcollection using getCollection and deleteDocument.
+      // Clear the user's cart subcollection.
       final cartDocuments = await FirebaseService.getCollection("users/$userId/cart");
       for (final doc in cartDocuments) {
         await FirebaseService.deleteDocument("users/$userId/cart", doc['id']);
@@ -93,50 +127,6 @@ Router orderRoutes() {
           'error': 'Internal Server Error',
           'details': e.toString()
         }),
-        headers: {'Content-Type': 'application/json'},
-      );
-    }
-  });
-
-  router.put('/<userId>/note', (Request request, String userId) async {
-    try {
-      final rawPayload = await request.readAsString();
-      print(rawPayload);
-      final payload = jsonDecode(rawPayload) as Map<String, dynamic>;
-
-      // Extract the note value whether it's a plain string or a map.
-      String? note;
-      final noteField = payload['note'];
-      if (noteField is Map<String, dynamic> && noteField.containsKey('stringValue')) {
-        note = noteField['stringValue'] as String?;
-      } else if (noteField is String) {
-        note = noteField;
-      }
-
-      // Validate that the note field is provided and not empty.
-      if (note == null || note.trim().isEmpty) {
-        return Response(
-          400,
-          body: jsonEncode({'error': 'Missing or empty note field'}),
-          headers: {'Content-Type': 'application/json'},
-        );
-      }
-
-      // final updateData = {'note': note};
-      final updateData = {'note': {"stringValue": note}};
-
-
-      // Update the user document in Firestore (assuming FirebaseService.updateDocument exists)
-      await FirebaseService.updateDocument('users', userId, updateData);
-
-      return Response.ok(
-        jsonEncode({'message': 'User note updated successfully', 'note': note}),
-        headers: {'Content-Type': 'application/json'},
-      );
-    } catch (e) {
-      print("Error in updating user note: $e");
-      return Response.internalServerError(
-        body: jsonEncode({'error': e.toString()}),
         headers: {'Content-Type': 'application/json'},
       );
     }

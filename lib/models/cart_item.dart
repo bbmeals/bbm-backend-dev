@@ -1,5 +1,5 @@
 class CartItem {
-  final String id;
+  // final String id;
   final String userId;
   final String restaurantId;
   final String itemId;
@@ -9,7 +9,7 @@ class CartItem {
   final DateTime createdAt;
 
   CartItem({
-    required this.id,
+    // required this.id,
     required this.userId,
     required this.restaurantId,
     required this.itemId,
@@ -20,7 +20,7 @@ class CartItem {
   });
 
   factory CartItem.fromJson(Map<String, dynamic> json) => CartItem(
-    id: json['id'] as String,
+    // id: json['id'] as String,
     userId: json['userId'] as String,
     restaurantId: json['restaurantId'] as String,
     itemId: json['itemId'] as String,
@@ -31,7 +31,7 @@ class CartItem {
   );
 
   Map<String, dynamic> toJson() => {
-    'id': id,
+    // 'id': id,
     'userId': userId,
     'restaurantId': restaurantId,
     'itemId': itemId,
@@ -40,26 +40,4 @@ class CartItem {
     'customization': customization,
     'createdAt': createdAt.toIso8601String(),
   };
-
-  // Convert this CartItem into Firestore's JSON format
-  Map<String, dynamic> toFirestoreJson() {
-    return {
-      'fields': {
-        'id': {'stringValue': id},
-        'userId': {'stringValue': userId},
-        'restaurantId': {'stringValue': restaurantId},
-        'itemId': {'stringValue': itemId},
-        'quantity': {'integerValue': quantity.toString()},
-        'priceSnapshot': {'doubleValue': priceSnapshot},
-        'customization': {
-          'mapValue': {
-            'fields': customization.map((key, value) =>
-                MapEntry(key, {'stringValue': value})
-            )
-          }
-        },
-        'createdAt': {'timestampValue': createdAt.toIso8601String()}
-      }
-    };
-  }
 }

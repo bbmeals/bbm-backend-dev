@@ -39,7 +39,7 @@ Future<void> main(List<String> args) async {
 
   // Mount routes.
   router.mount('/restaurants/', menuRoutes());
-  router.mount('/users/', cartRoutes()); // Handles /users/<userId>/cart
+  router.mount('/cart/', cartRoutes()); // Handles /users/<userId>/cart
   router.mount('/users/', subscriptionRoutes()); // Handles /users/<userId>/subscriptions
   router.mount('/orders/', orderRoutes());
   // router.mount('/user/', orderRoutes());
