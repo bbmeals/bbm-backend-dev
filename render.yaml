@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: bbm-backend-dev
+    env: docker
+    region: oregon
+    plan: free
+    buildCommand: dart pub get
+    startCommand: dart lib/main.dart
+    envVars:
+      - key: PORT
+        value: 8080
