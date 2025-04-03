@@ -104,6 +104,8 @@ Router orderRoutes() {
 
       // Optionally check for the note field; if missing, default to an empty string.
       payload.putIfAbsent('note', () => '');
+      payload['status']='Placed';
+
 
       // Create the order by saving it to the "orders" collection.
       final orderId = await FirebaseService.addDocument("orders", payload);
